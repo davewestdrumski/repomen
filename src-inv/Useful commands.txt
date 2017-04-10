@@ -1,0 +1,6 @@
+Useful commands
+
+Change a users password
+$newpwd = Read-Host "Enter password" -AsSecureString
+**************
+Set-ADAccountPassword sergei_ulianov -NewPassword $newpwd -Reset -Server ndminf-adc002
