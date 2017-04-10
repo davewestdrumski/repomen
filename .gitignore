@@ -1,0 +1,3 @@
+#This is for making sure no lists or results that could contain IPs or system names
+*.csv
+*.txt
