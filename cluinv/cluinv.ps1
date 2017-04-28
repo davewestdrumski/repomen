@@ -4,7 +4,7 @@
 
 $ErrorActionPreference= 'silentlycontinue'
 
-$LIST = Get-Content short-ndmclu-list.txt
+$LIST = Get-Content ndmclu-list.txt
 
 # Get creds to test with
 
@@ -42,7 +42,9 @@ ForEach ($IP in $LIST)
             $SN = $INFO.SerialNumber
             $OSINFO = Get-WmiObject win32_OperatingSystem -ComputerName "$IP" -Credential $wincred  | Format-Table
             $DISKINFO = Get-WmiObject win32_DiskDrive -ComputerName "$IP" -Credential $wincred |Format-Table Partitions,Model,size
-            $WINSVCS =  Get-WmiObject win32_service -ComputerName "$IP" -Credential $wincred | select Name,DisplayName,State,StartMode
+            $WINCPU = systeminfo | findstr /C:"Processor(s)" |Format-Table
+            $WINMEM = systeminfo | findstr /C:"Total Physical Memory" |Format-Table
+            # $WINSVCS =  Get-WmiObject win32_service -ComputerName "$IP" -Credential $wincred | select Name,DisplayName,State,StartMode
 
             $SUCCESS = 'SUCCESS'
 
@@ -54,7 +56,9 @@ ForEach ($IP in $LIST)
           $D >> output.csv
           $OSINFO >> output.csv
           $DISKINFO >> output.csv
-          $WINSVCS >> output.csv
+          $WINCPU >> output.csv
+          $WINMEM >> output.csv
+          #$WINSVCS >> output.csv
 
       }
 
@@ -92,9 +96,11 @@ ForEach ($IP in $LIST)
           $LINUXSERVER = Invoke-SSHCommand -SessionId 0 -Command "hostname"
           $MANU = Invoke-SSHCommand -SessionId 0 -Command "dmidecode -s system-manufacturer"
           $SN = Invoke-SSHCommand -SessionId 0 -Command "dmidecode -s system-serial-number "
-          $CPU = Invoke-SSHCommand -SessionId 0 -Command "lscpu |awk '/^CPU/ || /Vendor/ || /Thread/ || /Socket/|| /Core(s)/' | xargs" | Format-Table Output
-          $MEM = Invoke-SSHCommand -SessionId 0 -Command "dmidecode -t memory |awk '/Max/ || /Installed Size/'" |Format-Table Output
+          $CPU = Invoke-SSHCommandStream -SessionId 0 -Command "cat /proc/cpuinfo |awk '/processor/' | xargs" | Format-Table Output
+          #$CPU = Invoke-SSHCommand -SessionId 0 -Command "lscpu |awk '/^CPU/ || /Vendor/ || /Thread/ || /Socket/|| /Core(s)/' | xargs" | Format-Table Output
+          $MEM = Invoke-SSHCommandStream -SessionId 0 -Command "vmstat -s -S M | awk '/total memory/'" | Format-Table Output
           # $RUNNING = Invoke-SSHCommandStream -SessionId 0 -Command "chkconfig --list"
+          $LINDISK = Invoke-SSHCommandStream -SessionId 0 -Command "fdisk -l |awk '/Disk/' |xargs" | Format-Table
           $NEWLINUXSERVER = $LINUXSERVER.Output
           $NEWCPU = $CPU.Ouput
           $NEWMANU = $MANU.Output
@@ -108,6 +114,7 @@ ForEach ($IP in $LIST)
           $LINUXOUT >> linuxOutput.csv
           $CPU >> linuxOutput.csv
           $MEM >> linuxOutput.csv
+          $LINDISK >> linuxOutput.csv
           # $RUNNING >> linuxOutput.csv
 
           Remove-SSHSession -SessionId 0
@@ -132,7 +139,7 @@ ForEach ($IP in $LIST)
         write-host Unreachable from this host
         $IP >> noping.csv
     }
-
+    
 
 }
 
