@@ -16,3 +16,20 @@ end
 describe port(80), :skip do
   it { should_not be_listening }
 end
+
+describe package('httpd') do
+  it { should be_installed }
+end
+
+describe service('httpd') do
+  # it { should be_enabled } https://github.com/chef/chef/issues/7119
+  it { should be_running }
+end
+
+describe command('curl localhost') do
+  its('stdout') { should match /hello/ }
+end
+
+describe port(80) do
+  it { should be_listening }
+end
